@@ -1,29 +1,35 @@
 let noCount = 0;
-let heartbreakInterval;
 const noBtn = document.getElementById('noBtn');
 const yesBtn = document.getElementById('yesBtn');
+const mainCard = document.getElementById('main-card');
+const successMessage = document.getElementById('success-message');
 const music = document.getElementById('bgMusic');
+const heartbreakOverlay = document.getElementById('heartbreak-overlay');
 
-// 1. Loading screen
-window.addEventListener('load', () => {
-    setTimeout(() => {
-        document.getElementById('loading-screen').style.opacity = '0';
-        setTimeout(() => document.getElementById('loading-screen').classList.add('hidden'), 1000);
-    }, 2000);
-});
+// Ensure the No button is visible and interactive at the start
+noBtn.style.position = 'relative';
 
-// 2. Fixed "No" button movement
 function moveButton() {
     if (noCount < 3) {
-        const maxWidth = window.innerWidth - noBtn.offsetWidth - 20;
-        const maxHeight = window.innerHeight - noBtn.offsetHeight - 20;
+        // Calculate safe boundaries
+        const padding = 50;
+        const maxX = window.innerWidth - noBtn.offsetWidth - padding;
+        const maxY = window.innerHeight - noBtn.offsetHeight - padding;
+
+        // Generate random coordinates within boundaries
+        const randomX = Math.max(padding, Math.floor(Math.random() * maxX));
+        const randomY = Math.max(padding, Math.floor(Math.random() * maxY));
+
         noBtn.style.position = 'fixed';
-        noBtn.style.left = Math.max(10, Math.random() * maxWidth) + 'px';
-        noBtn.style.top = Math.max(10, Math.random() * maxHeight) + 'px';
+        noBtn.style.left = randomX + 'px';
+        noBtn.style.top = randomY + 'px';
+        noBtn.style.zIndex = "999";
+        
         noCount++;
 
         if (noCount === 3) {
             showPopup("I Dare You Click No, Again", 3000);
+            // After the "dare", make it stay still so she can actually click it
             setTimeout(() => {
                 noBtn.style.position = 'static';
                 document.querySelector('.btn-group').appendChild(noBtn);
@@ -32,45 +38,67 @@ function moveButton() {
     }
 }
 
+// Attach event listeners for both Mouse and Touch
 noBtn.addEventListener('mouseover', moveButton);
-noBtn.addEventListener('touchstart', (e) => { e.preventDefault(); moveButton(); });
+noBtn.addEventListener('touchstart', (e) => {
+    e.preventDefault(); 
+    moveButton();
+});
 
-// 3. Heartbreak Sequence with SHOWER
+// Logic for when she finally clicks "No" after 3 jumps
 noBtn.addEventListener('click', () => {
     if (noCount >= 3) {
-        const overlay = document.getElementById('heartbreak-overlay');
-        overlay.classList.remove('hidden');
+        heartbreakOverlay.classList.remove('hidden');
         document.getElementById('heartbreak-text').innerText = "Mera to Dil todd Ditta...";
         
-        // Start showing broken hearts shower
-        heartbreakInterval = setInterval(() => spawnElement("💔"), 150);
+        // Start the broken heart shower
+        const heartInterval = setInterval(() => spawnElement("💔"), 100);
 
         setTimeout(() => {
-            overlay.classList.add('hidden');
-            noBtn.classList.add('hidden');
-            clearInterval(heartbreakInterval); // Stop hearts
+            heartbreakOverlay.classList.add('hidden');
+            noBtn.style.display = 'none'; // Hide No button permanently
+            clearInterval(heartInterval);
             showPopup("Now click Yes 😒", 4000);
-            yesBtn.style.transform = "scale(1.5)";
+            yesBtn.style.transform = "scale(1.6)";
+            yesBtn.style.boxShadow = "0 0 20px #ff4d6d";
         }, 3000);
     }
 });
 
-// 4. Success / Petals
+// Yes Button Celebration
 yesBtn.addEventListener('click', () => {
-    document.getElementById('main-card').classList.add('hidden');
-    document.getElementById('success-message').classList.remove('hidden');
-    music.play();
-    setInterval(() => spawnElement("🌹"), 200);
+    mainCard.classList.add('hidden');
+    successMessage.classList.remove('hidden');
+    
+    // Play music (Handles browser blocks)
+    music.play().catch(() => console.log("Music play blocked until user interaction"));
+    
+    // Start Rose shower
+    setInterval(() => spawnElement("🌹"), 150);
 });
 
+// Universal spawner for Falling Hearts and Roses
 function spawnElement(symbol) {
     const el = document.createElement('div');
-    el.className = 'falling-element';
     el.innerHTML = symbol;
-    el.style.left = Math.random() * 100 + "vw";
-    el.style.fontSize = Math.random() * 20 + 20 + "px";
-    document.getElementById('animation-container').appendChild(el);
-    setTimeout(() => el.remove(), 5000);
+    el.style.position = 'fixed';
+    el.style.left = Math.random() * 100 + 'vw';
+    el.style.top = '-50px';
+    el.style.fontSize = Math.random() * 20 + 20 + 'px';
+    el.style.zIndex = '1000';
+    el.style.pointerEvents = 'none';
+    el.style.transition = 'transform 4s linear, opacity 4s';
+    
+    document.body.appendChild(el);
+
+    // Animate falling
+    setTimeout(() => {
+        el.style.transform = `translateY(${window.innerHeight + 100}px) rotate(${Math.random() * 360}deg)`;
+        el.style.opacity = '0';
+    }, 100);
+
+    // Clean up
+    setTimeout(() => el.remove(), 4000);
 }
 
 function showPopup(text, duration) {
